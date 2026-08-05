@@ -1,0 +1,36 @@
+{
+  "rewrites": [
+    {
+      "source": "/auth/:path*",
+      "destination": "/api/index.py"
+    },
+    {
+      "source": "/journals/:path*",
+      "destination": "/api/index.py"
+    },
+    {
+      "source": "/expenses/:path*",
+      "destination": "/api/index.py"
+    },
+    {
+      "source": "/ai/:path*",
+      "destination": "/api/index.py"
+    },
+    {
+      "source": "/planner/:path*",
+      "destination": "/api/index.py"
+    },
+    {
+      "source": "/static/:path*",
+      "destination": "/api/index.py"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "/api/index.py"
+    },
+    {
+      "source": "/((?!auth|journals|expenses|ai|planner|static|api).*)",
+      "destination": "/index.html"
+    }
+  ]
+}
