@@ -16,7 +16,6 @@ async def process_register(user: UserRegister):
     hashed_pwd = hash_password(user.password)
     user_id = str(uuid.uuid4())
     
-    # Try MongoDB
     try:
         db = get_database()
         existing_user = await db.users.find_one({"username": username_clean})
@@ -48,7 +47,6 @@ async def process_login(user: UserLogin):
     if not username_clean or not user.password:
         raise HTTPException(status_code=400, detail="Username and password are required")
 
-    # 1. MongoDB Check
     try:
         db = get_database()
         db_user = await db.users.find_one({"username": username_clean})
@@ -58,28 +56,48 @@ async def process_login(user: UserLogin):
     except Exception:
         pass
 
-    # 2. In-Memory Check
     if username_clean in IN_MEMORY_USERS:
         stored_user = IN_MEMORY_USERS[username_clean]
         if verify_password(user.password, stored_user["password"]):
             access_token = create_access_token(data={"sub": username_clean})
             return {"access_token": access_token, "token_type": "bearer", "username": username_clean}
 
-    # 3. Direct Session Creation for seamless onboarding
     hashed_pwd = hash_password(user.password)
     IN_MEMORY_USERS[username_clean] = {"_id": str(uuid.uuid4()), "username": username_clean, "email": f"{username_clean}@example.com", "password": hashed_pwd}
     access_token = create_access_token(data={"sub": username_clean})
     return {"access_token": access_token, "token_type": "bearer", "username": username_clean}
 
-@router.api_route("/register", methods=["POST", "GET", "OPTIONS"], status_code=status.HTTP_201_CREATED)
-@router.api_route("/register/", methods=["POST", "GET", "OPTIONS"], status_code=status.HTTP_201_CREATED)
-async def register(user: UserRegister):
+@router.post("/register", status_code=status.HTTP_201_CREATED)
+async def register_no_slash(user: UserRegister):
     return await process_register(user)
 
-@router.api_route("/login", methods=["POST", "GET", "OPTIONS"])
-@router.api_route("/login/", methods=["POST", "GET", "OPTIONS"])
-async def login(user: UserLogin):
+@router.post("/register/", status_code=status.HTTP_201_CREATED)
+async def register_with_slash(user: UserRegister):
+    return await process_register(user)
+
+@router.options("/register")
+async def register_options_no_slash():
+    return Response(status_code=200)
+
+@router.options("/register/")
+async def register_options_with_slash():
+    return Response(status_code=200)
+
+@router.post("/login", response_model=Token)
+async def login_no_slash(user: UserLogin):
     return await process_login(user)
+
+@router.post("/login/", response_model=Token)
+async def login_with_slash(user: UserLogin):
+    return await process_login(user)
+
+@router.options("/login")
+async def login_options_no_slash():
+    return Response(status_code=200)
+
+@router.options("/login/")
+async def login_options_with_slash():
+    return Response(status_code=200)
 
 @router.get("/me")
 @router.get("/me/")
