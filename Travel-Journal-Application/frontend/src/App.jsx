@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import api from './api';
 import ChatAssistant from './components/ChatAssistant';
 import JournalManager from './components/JournalManager';
@@ -14,21 +14,43 @@ export default function App() {
   const [password, setPassword] = useState('');
   const [activeTab, setActiveTab] = useState('journals');
 
+  useEffect(() => {
+    const checkSession = async () => {
+      if (token) {
+        try {
+          await api.get('/auth/me');
+        } catch (err) {
+          // Token expired or invalid
+          localStorage.removeItem('token');
+          setToken(null);
+        }
+      }
+    };
+    checkSession();
+  }, [token]);
+
   const handleAuth = async (e) => {
     e.preventDefault();
     try {
       if (authMode === 'register') {
-        await api.post('/auth/register', { username, email, password });
-        alert('Registered successfully! Please log in.');
-        setAuthMode('login');
+        const res = await api.post('/auth/register', { username, email, password });
+        if (res.data.access_token) {
+          localStorage.setItem('token', res.data.access_token);
+          setToken(res.data.access_token);
+        } else {
+          alert('Registered successfully! Logging in...');
+          const loginRes = await api.post('/auth/login', { username, password });
+          localStorage.setItem('token', loginRes.data.access_token);
+          setToken(loginRes.data.access_token);
+        }
       } else {
         const res = await api.post('/auth/login', { username, password });
         localStorage.setItem('token', res.data.access_token);
         setToken(res.data.access_token);
       }
     } catch (err) {
-      const errorMsg = err.response?.data?.detail || err.message || 'Authentication failed. Please verify backend connection.';
-      alert(`Error: ${errorMsg}`);
+      const errorDetail = err.response?.data?.detail || err.message || 'Authentication failed. Please verify network connection.';
+      alert(`Authentication Error: ${errorDetail}`);
     }
   };
 
@@ -104,7 +126,7 @@ export default function App() {
               type="submit"
               className="w-full bg-gradient-to-r from-teal-400 to-emerald-500 hover:from-teal-300 hover:to-emerald-400 py-3 rounded-xl font-bold text-slate-950 shadow-lg shadow-teal-500/20 transition transform active:scale-98 text-sm"
             >
-              {authMode === 'login' ? 'Sign In to Workspace' : 'Create Free Account'}
+              {authMode === 'login' ? 'Sign In to Workspace' : 'Create Account & Start Session'}
             </button>
           </form>
 
