@@ -2,6 +2,7 @@ from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.routers import auth, journals, expenses, ai_agent, planner
+from app.models import UserRegister, UserLogin
 import os
 
 app = FastAPI(
@@ -9,7 +10,6 @@ app = FastAPI(
     redirect_slashes=False
 )
 
-# Universal CORS Middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -21,21 +21,22 @@ app.add_middleware(
 os.makedirs("uploads", exist_ok=True)
 app.mount("/static", StaticFiles(directory="uploads"), name="static")
 
-# Include Routers (Direct & /api prefixed)
 app.include_router(auth.router)
 app.include_router(journals.router)
 app.include_router(expenses.router)
 app.include_router(ai_agent.router)
 app.include_router(planner.router)
 
-app.include_router(auth.router, prefix="/api")
-app.include_router(journals.router, prefix="/api")
-app.include_router(expenses.router, prefix="/api")
-app.include_router(ai_agent.router, prefix="/api")
-app.include_router(planner.router, prefix="/api")
+@app.post("/register", status_code=201)
+@app.post("/register/", status_code=201)
+async def root_register(user: UserRegister):
+    return await auth.process_register(user)
+
+@app.post("/login")
+@app.post("/login/")
+async def root_login(user: UserLogin):
+    return await auth.process_login(user)
 
 @app.api_route("/", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
-@app.api_route("/api", methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"])
 def read_root():
     return {"status": "Travel Journal API is operational"}
-
