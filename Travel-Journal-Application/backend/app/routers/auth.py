@@ -76,11 +76,8 @@ async def register_with_slash(user: UserRegister):
     return await process_register(user)
 
 @router.options("/register")
-async def register_options_no_slash():
-    return Response(status_code=200)
-
 @router.options("/register/")
-async def register_options_with_slash():
+async def register_options():
     return Response(status_code=200)
 
 @router.post("/login", response_model=Token)
@@ -92,11 +89,8 @@ async def login_with_slash(user: UserLogin):
     return await process_login(user)
 
 @router.options("/login")
-async def login_options_no_slash():
-    return Response(status_code=200)
-
 @router.options("/login/")
-async def login_options_with_slash():
+async def login_options():
     return Response(status_code=200)
 
 @router.get("/me")
