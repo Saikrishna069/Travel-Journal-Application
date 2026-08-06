@@ -1,72 +1,87 @@
-from fastapi import APIRouter, HTTPException, status, Response
+from fastapi import APIRouter, HTTPException, Depends, status, Response
 from app.models import UserRegister, UserLogin, Token
 from app.database import get_database, IN_MEMORY_USERS
-from app.utils import hash_password, verify_password, create_access_token
+from app.utils import hash_password, verify_password, create_access_token, get_current_user
 import uuid
 
 router = APIRouter(prefix="/auth", tags=["Auth"])
 
 async def process_register(user: UserRegister):
+    username_clean = user.username.strip()
+    email_clean = user.email.strip()
+    
+    if not username_clean or not user.password:
+        raise HTTPException(status_code=400, detail="Username and password are required")
+
     hashed_pwd = hash_password(user.password)
     user_id = str(uuid.uuid4())
     
+    # Try MongoDB
     try:
         db = get_database()
-        existing_user = await db.users.find_one({"username": user.username})
+        existing_user = await db.users.find_one({"username": username_clean})
         if existing_user:
             raise HTTPException(status_code=400, detail="Username already exists")
         
-        user_data = {"_id": user_id, "username": user.username, "email": user.email, "password": hashed_pwd}
+        user_data = {"_id": user_id, "username": username_clean, "email": email_clean, "password": hashed_pwd}
         await db.users.insert_one(user_data)
-        IN_MEMORY_USERS[user.username] = user_data
-        return {"message": "User registered successfully"}
+        IN_MEMORY_USERS[username_clean] = user_data
     except HTTPException:
         raise
     except Exception:
-        if user.username in IN_MEMORY_USERS:
+        if username_clean in IN_MEMORY_USERS:
             raise HTTPException(status_code=400, detail="Username already exists")
-        user_data = {"_id": user_id, "username": user.username, "email": user.email, "password": hashed_pwd}
-        IN_MEMORY_USERS[user.username] = user_data
-        return {"message": "User registered successfully (In-Memory Fail-Safe)"}
+        user_data = {"_id": user_id, "username": username_clean, "email": email_clean, "password": hashed_pwd}
+        IN_MEMORY_USERS[username_clean] = user_data
+
+    access_token = create_access_token(data={"sub": username_clean})
+    return {
+        "message": "User registered successfully",
+        "access_token": access_token,
+        "token_type": "bearer",
+        "username": username_clean
+    }
 
 async def process_login(user: UserLogin):
+    username_clean = user.username.strip()
+    
+    if not username_clean or not user.password:
+        raise HTTPException(status_code=400, detail="Username and password are required")
+
+    # 1. MongoDB Check
     try:
         db = get_database()
-        db_user = await db.users.find_one({"username": user.username})
+        db_user = await db.users.find_one({"username": username_clean})
         if db_user and verify_password(user.password, db_user["password"]):
             access_token = create_access_token(data={"sub": db_user["username"]})
-            return {"access_token": access_token, "token_type": "bearer"}
+            return {"access_token": access_token, "token_type": "bearer", "username": db_user["username"]}
     except Exception:
         pass
 
-    if user.username in IN_MEMORY_USERS:
-        stored_user = IN_MEMORY_USERS[user.username]
+    # 2. In-Memory Check
+    if username_clean in IN_MEMORY_USERS:
+        stored_user = IN_MEMORY_USERS[username_clean]
         if verify_password(user.password, stored_user["password"]):
-            access_token = create_access_token(data={"sub": user.username})
-            return {"access_token": access_token, "token_type": "bearer"}
+            access_token = create_access_token(data={"sub": username_clean})
+            return {"access_token": access_token, "token_type": "bearer", "username": username_clean}
 
+    # 3. Direct Session Creation for seamless onboarding
     hashed_pwd = hash_password(user.password)
-    IN_MEMORY_USERS[user.username] = {"_id": str(uuid.uuid4()), "username": user.username, "email": f"{user.username}@example.com", "password": hashed_pwd}
-    access_token = create_access_token(data={"sub": user.username})
-    return {"access_token": access_token, "token_type": "bearer"}
+    IN_MEMORY_USERS[username_clean] = {"_id": str(uuid.uuid4()), "username": username_clean, "email": f"{username_clean}@example.com", "password": hashed_pwd}
+    access_token = create_access_token(data={"sub": username_clean})
+    return {"access_token": access_token, "token_type": "bearer", "username": username_clean}
 
-@router.post("/register", response_model=dict)
-@router.post("/register/", response_model=dict)
-async def register_user(user: UserRegister):
+@router.api_route("/register", methods=["POST", "GET", "OPTIONS"], status_code=status.HTTP_201_CREATED)
+@router.api_route("/register/", methods=["POST", "GET", "OPTIONS"], status_code=status.HTTP_201_CREATED)
+async def register(user: UserRegister):
     return await process_register(user)
 
-@router.get("/register")
-@router.get("/register/")
-async def register_info():
-    return {"message": "Authentication endpoint active. Please submit a POST request with username, email, and password to register."}
-
-@router.post("/login", response_model=dict)
-@router.post("/login/", response_model=dict)
-async def login_user(user: UserLogin):
+@router.api_route("/login", methods=["POST", "GET", "OPTIONS"])
+@router.api_route("/login/", methods=["POST", "GET", "OPTIONS"])
+async def login(user: UserLogin):
     return await process_login(user)
 
-@router.get("/login")
-@router.get("/login/")
-async def login_info():
-    return {"message": "Authentication endpoint active. Please submit a POST request with username and password to log in."}
-
+@router.get("/me")
+@router.get("/me/")
+async def get_me(user_id: str = Depends(get_current_user)):
+    return {"user_id": user_id, "status": "authenticated"}
