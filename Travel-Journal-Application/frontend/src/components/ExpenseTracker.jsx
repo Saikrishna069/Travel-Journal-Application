@@ -41,7 +41,8 @@ export default function ExpenseTracker() {
       setCategory(''); setAmount(''); setDescription('');
       fetchExpenses();
     } catch (err) {
-      alert("Failed to add expense.");
+      const errorDetail = err.response?.data?.detail || err.message || "Failed to add expense.";
+      alert(`Error: ${errorDetail}`);
     }
   };
 
@@ -58,7 +59,8 @@ export default function ExpenseTracker() {
       fetchExpenses();
       fetchArchives();
     } catch (err) {
-      alert("Failed to reset expenses.");
+      const errorDetail = err.response?.data?.detail || err.message || "Failed to reset expenses.";
+      alert(`Error: ${errorDetail}`);
     }
   };
 
