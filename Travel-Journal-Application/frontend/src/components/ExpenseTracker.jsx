@@ -10,24 +10,22 @@ export default function ExpenseTracker() {
   const [description, setDescription] = useState('');
 
   const fetchExpenses = async () => {
-  try {
-    const res = await api.get('/expenses/');
-    // Ensure data is always an array
-    setExpenses(Array.isArray(res.data) ? res.data : []);
+    try {
+      const res = await api.get('/expenses/');
+      setExpenses(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
-    console.error('Error fetching expenses:', err);
-    setExpenses([]);
+      console.error("Error fetching expenses:", err);
+      setExpenses([]);
     }
   };
 
   const fetchArchives = async () => {
-  try {
-    const res = await api.get('/expenses/archives');
-    // Ensure data is always an array
-    setArchives(Array.isArray(res.data) ? res.data : []);
+    try {
+      const res = await api.get('/expenses/archives');
+      setArchives(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
-    console.error('Error fetching archives:', err);
-    setArchives([]);
+      console.error("Error fetching archives:", err);
+      setArchives([]);
     }
   };
 
@@ -38,13 +36,17 @@ export default function ExpenseTracker() {
 
   const handleAdd = async (e) => {
     e.preventDefault();
-    await api.post('/expenses/', { category, amount: parseFloat(amount), description });
-    setCategory(''); setAmount(''); setDescription('');
-    fetchExpenses();
+    try {
+      await api.post('/expenses/', { category, amount: parseFloat(amount), description });
+      setCategory(''); setAmount(''); setDescription('');
+      fetchExpenses();
+    } catch (err) {
+      alert("Failed to add expense.");
+    }
   };
 
   const handleResetAndSave = async () => {
-    if (expenses.length === 0) {
+    if (!Array.isArray(expenses) || expenses.length === 0) {
       alert("No active expenses to reset.");
       return;
     }
@@ -52,7 +54,7 @@ export default function ExpenseTracker() {
 
     try {
       const res = await api.post('/expenses/reset');
-      alert(`Saved as ${res.data.trip_name} and cleared current expenses!`);
+      alert(`Saved as ${res.data.trip_name || 'Trip'} and cleared current expenses!`);
       fetchExpenses();
       fetchArchives();
     } catch (err) {
@@ -70,7 +72,9 @@ export default function ExpenseTracker() {
     }
   };
 
-  const total = expenses.reduce((acc, curr) => acc + curr.amount, 0);
+  const safeExpenses = Array.isArray(expenses) ? expenses : [];
+  const safeArchives = Array.isArray(archives) ? archives : [];
+  const total = safeExpenses.reduce((acc, curr) => acc + (curr.amount || 0), 0);
 
   return (
     <div className="space-y-8">
@@ -145,7 +149,7 @@ export default function ExpenseTracker() {
             </div>
           </div>
 
-          {expenses.length > 0 && (
+          {safeExpenses.length > 0 && (
             <button 
               onClick={handleResetAndSave} 
               className="flex items-center gap-2 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-300 hover:to-orange-400 text-slate-950 font-bold px-4 py-2.5 rounded-xl text-xs shadow-md transition"
@@ -156,24 +160,24 @@ export default function ExpenseTracker() {
           )}
         </div>
 
-        {expenses.length === 0 ? (
+        {safeExpenses.length === 0 ? (
           <p className="text-sm text-slate-400 italic py-2">No active expenses recorded. Add expenditures above or view saved trip records below.</p>
         ) : (
           <div className="divide-y divide-slate-700/60">
-            {expenses.map((e) => (
-              <div key={e._id} className="py-3 flex justify-between items-center text-sm">
+            {safeExpenses.map((e) => (
+              <div key={e._id || Math.random()} className="py-3 flex justify-between items-center text-sm">
                 <div>
                   <span className="font-bold text-teal-300 mr-2">{e.category}:</span>
                   <span className="text-slate-300">{e.description}</span>
                 </div>
-                <span className="font-bold text-white text-base">${e.amount.toFixed(2)}</span>
+                <span className="font-bold text-white text-base">${(e.amount || 0).toFixed(2)}</span>
               </div>
             ))}
           </div>
         )}
       </div>
 
-      {archives.length > 0 && (
+      {safeArchives.length > 0 && (
         <div className="bg-slate-800/80 backdrop-blur-md p-6 rounded-2xl border border-slate-700/60 shadow-xl space-y-4">
           <div className="flex items-center gap-2 text-amber-400 font-bold text-lg border-b border-slate-700/60 pb-3">
             <FolderArchive className="w-5 h-5" />
@@ -181,29 +185,31 @@ export default function ExpenseTracker() {
           </div>
 
           <div className="grid md:grid-cols-2 gap-4">
-            {archives.map((arc) => (
-              <div key={arc._id} className="bg-slate-900/90 p-4 rounded-xl border border-slate-700/60 space-y-3 relative group">
+            {safeArchives.map((arc) => (
+              <div key={arc._id || Math.random()} className="bg-slate-900/90 p-4 rounded-xl border border-slate-700/60 space-y-3 relative group">
                 <div className="flex justify-between items-center pr-6">
-                  <span className="font-bold text-teal-300 text-base">{arc.trip_name}</span>
+                  <span className="font-bold text-teal-300 text-base">{arc.trip_name || 'Saved Trip'}</span>
                   <span className="bg-teal-500/20 text-teal-300 text-xs font-bold px-2.5 py-1 rounded-lg border border-teal-500/30">
-                    Total: ${arc.total_amount.toFixed(2)}
+                    Total: ${(arc.total_amount || 0).toFixed(2)}
                   </span>
                 </div>
 
-                <button 
-                  onClick={() => handleDeleteArchive(arc._id)} 
-                  title="Delete Trip Record" 
-                  className="absolute top-3.5 right-3 text-slate-500 hover:text-rose-400 p-1 rounded-lg hover:bg-rose-500/10 transition"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                {arc._id && (
+                  <button 
+                    onClick={() => handleDeleteArchive(arc._id)} 
+                    title="Delete Trip Record" 
+                    className="absolute top-3.5 right-3 text-slate-500 hover:text-rose-400 p-1 rounded-lg hover:bg-rose-500/10 transition"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                )}
 
-                <p className="text-xs text-slate-400 font-mono">Archived: {new Date(arc.created_at).toLocaleDateString()}</p>
+                <p className="text-xs text-slate-400 font-mono">Archived: {arc.created_at ? new Date(arc.created_at).toLocaleDateString() : 'Recent'}</p>
                 <div className="text-xs text-slate-300 space-y-1.5 bg-slate-800/60 p-3 rounded-lg border border-slate-700/50">
-                  {arc.expenses.map((item, idx) => (
+                  {Array.isArray(arc.expenses) && arc.expenses.map((item, idx) => (
                     <div key={idx} className="flex justify-between">
                       <span className="text-slate-300">• {item.category}: {item.description}</span>
-                      <span className="font-medium text-teal-400">${item.amount.toFixed(2)}</span>
+                      <span className="font-medium text-teal-400">${(item.amount || 0).toFixed(2)}</span>
                     </div>
                   ))}
                 </div>
