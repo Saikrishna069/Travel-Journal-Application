@@ -20,7 +20,6 @@ export default function App() {
         try {
           await api.get('/auth/me');
         } catch (err) {
-          // Token expired or invalid
           localStorage.removeItem('token');
           setToken(null);
         }
@@ -49,8 +48,8 @@ export default function App() {
         setToken(res.data.access_token);
       }
     } catch (err) {
-      const errorDetail = err.response?.data?.detail || err.message || 'Authentication failed. Please verify network connection.';
-      alert(`Authentication Error: ${errorDetail}`);
+      const errorMsg = err.response?.data?.detail || err.message || 'Authentication failed.';
+      alert(`Authentication Error: ${errorMsg}`);
     }
   };
 
@@ -126,7 +125,7 @@ export default function App() {
               type="submit"
               className="w-full bg-gradient-to-r from-teal-400 to-emerald-500 hover:from-teal-300 hover:to-emerald-400 py-3 rounded-xl font-bold text-slate-950 shadow-lg shadow-teal-500/20 transition transform active:scale-98 text-sm"
             >
-              {authMode === 'login' ? 'Sign In to Workspace' : 'Create Account & Start Session'}
+              {authMode === 'login' ? 'Sign In to Workspace' : 'Create Free Account & Start Session'}
             </button>
           </form>
 
