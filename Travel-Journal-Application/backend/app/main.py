@@ -2,6 +2,7 @@ from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from app.routers import auth, journals, expenses, ai_agent, planner
+from app.models import UserRegister, UserLogin
 import os
 
 app = FastAPI(
@@ -25,6 +26,14 @@ app.include_router(journals.router)
 app.include_router(expenses.router)
 app.include_router(ai_agent.router)
 app.include_router(planner.router)
+
+@app.post("/register", status_code=201)
+async def root_register(user: UserRegister):
+    return await auth.process_register(user)
+
+@app.post("/login")
+async def root_login(user: UserLogin):
+    return await auth.process_login(user)
 
 @app.get("/")
 def read_root():
