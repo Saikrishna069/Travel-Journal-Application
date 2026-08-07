@@ -1,0 +1,28 @@
+{
+  "rewrites": [
+    {
+      "source": "/auth/:path*",
+      "destination": "https://travel-journal-application-ysdk.onrender.com/auth/:path*"
+    },
+    {
+      "source": "/journals/:path*",
+      "destination": "https://travel-journal-application-ysdk.onrender.com/journals/:path*"
+    },
+    {
+      "source": "/expenses/:path*",
+      "destination": "https://travel-journal-application-ysdk.onrender.com/expenses/:path*"
+    },
+    {
+      "source": "/ai/:path*",
+      "destination": "https://travel-journal-application-ysdk.onrender.com/ai/:path*"
+    },
+    {
+      "source": "/planner/:path*",
+      "destination": "https://travel-journal-application-ysdk.onrender.com/planner/:path*"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}
