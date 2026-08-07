@@ -12,9 +12,10 @@ export default function JournalManager() {
   const fetchJournals = async () => {
     try {
       const res = await api.get('/journals/');
-      setJournals(res.data);
+      setJournals(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
-      console.error(err);
+      console.error("Error fetching journals:", err);
+      setJournals([]);
     }
   };
 
@@ -25,22 +26,32 @@ export default function JournalManager() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     let imageUrl = '';
-    if (file) {
-      const formData = new FormData();
-      formData.append('file', file);
-      const uploadRes = await api.post('/journals/upload-image', formData);
-      imageUrl = uploadRes.data.image_url;
-    }
+    try {
+      if (file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        const uploadRes = await api.post('/journals/upload-image', formData);
+        imageUrl = uploadRes.data.image_url || '';
+      }
 
-    await api.post('/journals/', { title, destination, content, image_url: imageUrl });
-    setTitle(''); setDestination(''); setContent(''); setFile(null);
-    fetchJournals();
+      await api.post('/journals/', { title, destination, content, image_url: imageUrl });
+      setTitle(''); setDestination(''); setContent(''); setFile(null);
+      fetchJournals();
+    } catch (err) {
+      alert("Failed to save journal entry. Please check backend connection.");
+    }
   };
 
   const handleDelete = async (id) => {
-    await api.delete(`/journals/${id}`);
-    fetchJournals();
+    try {
+      await api.delete(`/journals/${id}`);
+      fetchJournals();
+    } catch (err) {
+      alert("Failed to delete journal entry.");
+    }
   };
+
+  const safeJournals = Array.isArray(journals) ? journals : [];
 
   return (
     <div className="space-y-8">
@@ -106,24 +117,26 @@ export default function JournalManager() {
             <span>Your Travel Memory Log</span>
           </h4>
           <span className="bg-slate-800 text-teal-300 text-xs font-bold px-3 py-1 rounded-full border border-slate-700">
-            {journals.length} Saved Entries
+            {safeJournals.length} Saved Entries
           </span>
         </div>
 
-        {journals.length === 0 ? (
+        {safeJournals.length === 0 ? (
           <div className="bg-slate-800/40 p-8 rounded-2xl border border-slate-700/40 text-center text-slate-400 text-sm">
             No journal entries yet. Create your first travel log using the form above!
           </div>
         ) : (
           <div className="grid md:grid-cols-2 gap-6">
-            {journals.map((j) => (
-              <div key={j._id} className="bg-slate-800/80 backdrop-blur-md p-5 rounded-2xl border border-slate-700/60 shadow-xl flex flex-col justify-between hover:border-slate-600 transition group">
+            {safeJournals.map((j) => (
+              <div key={j._id || Math.random()} className="bg-slate-800/80 backdrop-blur-md p-5 rounded-2xl border border-slate-700/60 shadow-xl flex flex-col justify-between hover:border-slate-600 transition group">
                 <div>
                   <div className="flex justify-between items-start gap-2 mb-2">
                     <h5 className="text-lg font-bold text-teal-300 group-hover:text-teal-200 transition">{j.title}</h5>
-                    <button onClick={()=>handleDelete(j._id)} className="text-slate-500 hover:text-rose-400 p-1.5 rounded-lg hover:bg-rose-500/10 transition">
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+                    {j._id && (
+                      <button onClick={()=>handleDelete(j._id)} className="text-slate-500 hover:text-rose-400 p-1.5 rounded-lg hover:bg-rose-500/10 transition">
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-4 text-xs text-slate-400 mb-3">
@@ -133,7 +146,7 @@ export default function JournalManager() {
                     </span>
                     <span className="flex items-center gap-1 font-mono">
                       <Calendar className="w-3.5 h-3.5" />
-                      {new Date(j.created_at).toLocaleDateString()}
+                      {j.created_at ? new Date(j.created_at).toLocaleDateString() : 'Recent'}
                     </span>
                   </div>
 
@@ -141,7 +154,7 @@ export default function JournalManager() {
                 </div>
 
                 {j.image_url && (
-                  <img src={`${import.meta.env.VITE_API_URL || 'http://localhost:8000'}${j.image_url}`} alt="Travel" className="w-full h-48 object-cover rounded-xl border border-slate-700/50 mt-2" />
+                  <img src={`${import.meta.env.VITE_API_URL || 'https://travel-journal-application-ysdk.onrender.com'}${j.image_url}`} alt="Travel" className="w-full h-48 object-cover rounded-xl border border-slate-700/50 mt-2" />
                 )}
               </div>
             ))}
