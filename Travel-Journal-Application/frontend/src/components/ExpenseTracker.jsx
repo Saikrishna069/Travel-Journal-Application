@@ -10,22 +10,26 @@ export default function ExpenseTracker() {
   const [description, setDescription] = useState('');
 
   const fetchExpenses = async () => {
-    try {
-      const res = await api.get('/expenses/');
-      setExpenses(res.data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  try {
+    const res = await api.get('/expenses/');
+    // Ensure data is always an array
+    setExpenses(Array.isArray(res.data) ? res.data : []);
+  } catch (err) {
+    console.error('Error fetching expenses:', err);
+    setExpenses([]);
+  }
+};
 
   const fetchArchives = async () => {
-    try {
-      const res = await api.get('/expenses/archives');
-      setArchives(res.data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  try {
+    const res = await api.get('/expenses/archives');
+    // Ensure data is always an array
+    setArchives(Array.isArray(res.data) ? res.data : []);
+  } catch (err) {
+    console.error('Error fetching archives:', err);
+    setArchives([]);
+  }
+};
 
   useEffect(() => {
     fetchExpenses();
