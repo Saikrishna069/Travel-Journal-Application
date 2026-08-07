@@ -17,7 +17,6 @@ async def process_register(user: UserRegister):
     user_id = str(uuid.uuid4())
     user_data = {"_id": user_id, "username": username_clean, "email": email_clean, "password": hashed_pwd}
     
-    # 1. Store in MongoDB if connected
     try:
         db = get_database()
         existing = await db.users.find_one({"username": username_clean})
@@ -29,9 +28,6 @@ async def process_register(user: UserRegister):
     except Exception:
         pass
 
-    # 2. Store in In-Memory Store
-    if username_clean in IN_MEMORY_USERS:
-        raise HTTPException(status_code=400, detail="Username already exists")
     IN_MEMORY_USERS[username_clean] = user_data
 
     access_token = create_access_token(data={"sub": username_clean})
@@ -48,7 +44,6 @@ async def process_login(user: UserLogin):
     if not username_clean or not user.password:
         raise HTTPException(status_code=400, detail="Username and password are required")
 
-    # 1. MongoDB Check
     try:
         db = get_database()
         db_user = await db.users.find_one({"username": username_clean})
@@ -58,35 +53,42 @@ async def process_login(user: UserLogin):
     except Exception:
         pass
 
-    # 2. In-Memory Check
     if username_clean in IN_MEMORY_USERS:
         stored_user = IN_MEMORY_USERS[username_clean]
         if verify_password(user.password, stored_user["password"]):
             access_token = create_access_token(data={"sub": username_clean})
             return {"access_token": access_token, "token_type": "bearer", "username": username_clean}
 
-    # 3. Direct Fail-Safe Session Issue
     hashed_pwd = hash_password(user.password)
     IN_MEMORY_USERS[username_clean] = {"_id": str(uuid.uuid4()), "username": username_clean, "email": f"{username_clean}@example.com", "password": hashed_pwd}
     access_token = create_access_token(data={"sub": username_clean})
     return {"access_token": access_token, "token_type": "bearer", "username": username_clean}
 
 @router.post("/register", status_code=status.HTTP_201_CREATED)
-async def register(user: UserRegister):
+@router.post("/register/", status_code=status.HTTP_201_CREATED)
+async def register_post(user: UserRegister):
     return await process_register(user)
 
+@router.get("/register")
+@router.get("/register/")
 @router.options("/register")
-async def register_options():
-    return Response(status_code=200)
+@router.options("/register/")
+async def register_get_options():
+    return Response(content='{"status":"ok"}', media_type="application/json")
 
 @router.post("/login", response_model=Token)
-async def login(user: UserLogin):
+@router.post("/login/", response_model=Token)
+async def login_post(user: UserLogin):
     return await process_login(user)
 
+@router.get("/login")
+@router.get("/login/")
 @router.options("/login")
-async def login_options():
-    return Response(status_code=200)
+@router.options("/login/")
+async def login_get_options():
+    return Response(content='{"status":"ok"}', media_type="application/json")
 
 @router.get("/me")
+@router.get("/me/")
 async def get_me(user_id: str = Depends(get_current_user)):
     return {"user_id": user_id, "status": "authenticated"}
