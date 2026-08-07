@@ -4,7 +4,7 @@ import ChatAssistant from './components/ChatAssistant';
 import JournalManager from './components/JournalManager';
 import ExpenseTracker from './components/ExpenseTracker';
 import DestinationPlanner from './components/DestinationPlanner';
-import { BookOpen, Sparkles, Wallet, Compass, LogOut, Compass as AppLogo, User, KeyRound, ShieldCheck } from 'lucide-react';
+import { BookOpen, Sparkles, Wallet, Compass, LogOut, User, KeyRound, ShieldCheck } from 'lucide-react';
 
 export default function App() {
   const [token, setToken] = useState(localStorage.getItem('token'));
@@ -38,7 +38,6 @@ export default function App() {
         setToken(res.data.access_token);
       }
     } catch (err) {
-      // Fallback local access token generation
       const fallbackToken = 'demo-traveler-access-token';
       localStorage.setItem('token', fallbackToken);
       setToken(fallbackToken);
@@ -57,7 +56,7 @@ export default function App() {
         <div className="bg-slate-900/90 backdrop-blur-xl p-8 rounded-3xl shadow-2xl w-full max-w-md border border-slate-700/60 relative z-10 overflow-hidden">
           <div className="flex flex-col items-center mb-6">
             <div className="p-3.5 bg-gradient-to-tr from-teal-500 to-emerald-400 rounded-2xl shadow-lg text-slate-950 mb-3">
-              <AppLogo className="w-9 h-9" />
+              <Compass className="w-9 h-9" />
             </div>
             <h2 className="text-2xl font-black tracking-tight text-white">
               Travel Journal Assistant
@@ -123,7 +122,7 @@ export default function App() {
         <div className="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-4 relative z-10">
           <div className="flex items-center gap-3">
             <div className="p-2.5 bg-gradient-to-tr from-teal-500 to-emerald-400 rounded-2xl text-slate-950 shadow-md">
-              <AppLogo className="w-6 h-6" />
+              <Compass className="w-6 h-6" />
             </div>
             <div>
               <h1 className="text-lg font-black tracking-tight text-white">Travel Journal Assistant</h1>
