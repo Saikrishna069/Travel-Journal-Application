@@ -29,6 +29,8 @@ export default function ChatAssistant() {
     }
   };
 
+  const safeMessages = Array.isArray(messages) ? messages : [];
+
   return (
     <div className="bg-slate-800/80 backdrop-blur-md border border-slate-700/60 rounded-2xl shadow-2xl p-5 flex flex-col h-[580px]">
       <div className="flex items-center justify-between border-b border-slate-700/60 pb-3 mb-4">
@@ -48,7 +50,7 @@ export default function ChatAssistant() {
       </div>
 
       <div className="flex-1 overflow-y-auto space-y-3 p-3 bg-slate-900/90 rounded-xl border border-slate-800/80">
-        {messages.map((m, idx) => (
+        {safeMessages.map((m, idx) => (
           <div key={idx} className={`flex items-start gap-2.5 max-w-xl ${m.sender === 'user' ? 'ml-auto flex-row-reverse' : ''}`}>
             <div className={`p-2 rounded-xl text-xs ${m.sender === 'user' ? 'bg-teal-500 text-slate-950' : 'bg-slate-800 text-teal-300 border border-slate-700'}`}>
               {m.sender === 'user' ? <User className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
