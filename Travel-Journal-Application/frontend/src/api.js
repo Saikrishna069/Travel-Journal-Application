@@ -1,16 +1,13 @@
 import axios from 'axios';
 
-// Initialize axios instance with relative baseURL
-// Vercel will rewrite /auth, /journals, /expenses, /ai, /planner to backend via vercel.json
 const api = axios.create({
-  baseURL: '/', // Use root-relative path
+  baseURL: '',
   timeout: 20000,
   headers: {
     'Content-Type': 'application/json'
   }
 });
 
-// Request interceptor: Add auth token to all requests
 api.interceptors.request.use(
   (config) => {
     try {
@@ -29,7 +26,6 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor: Handle errors globally
 api.interceptors.response.use(
   (response) => {
     return response;
