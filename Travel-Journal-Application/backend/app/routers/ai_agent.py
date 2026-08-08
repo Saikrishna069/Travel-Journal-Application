@@ -2,6 +2,7 @@ from fastapi import APIRouter
 from app.models import ChatMessage
 from app.config import settings
 import httpx
+import sys
 
 router = APIRouter(prefix="/ai", tags=["AI Agent"])
 
@@ -45,7 +46,9 @@ async def chat_assistant(msg: ChatMessage):
     
     if settings.OPENAI_API_KEY and len(settings.OPENAI_API_KEY.strip()) > 0:
         try:
-            async with httpx.AsyncClient(timeout=15.0) as client:
+            print(f"DEBUG: Attempting OpenAI API call with key starting: {settings.OPENAI_API_KEY[:20]}", file=sys.stderr)
+            
+            async with httpx.AsyncClient(timeout=30.0) as client:
                 res = await client.post(
                     "https://api.openai.com/v1/chat/completions",
                     headers={"Authorization": f"Bearer {settings.OPENAI_API_KEY}"},
@@ -55,15 +58,26 @@ async def chat_assistant(msg: ChatMessage):
                             {"role": "system", "content": SYSTEM_PROMPT},
                             {"role": "user", "content": user_prompt}
                         ],
-                        "temperature": 0.2
+                        "temperature": 0.2,
+                        "max_tokens": 500
                     }
                 )
+                
+                print(f"DEBUG: OpenAI API Response Status: {res.status_code}", file=sys.stderr)
                 data = res.json()
+                
                 if "choices" in data and len(data["choices"]) > 0:
-                    return {"reply": data["choices"][0]["message"]["content"]}
-        except Exception:
+                    reply = data["choices"][0]["message"]["content"]
+                    print(f"DEBUG: Got OpenAI response: {len(reply)} chars", file=sys.stderr)
+                    return {"reply": reply}
+                else:
+                    print(f"DEBUG: Unexpected OpenAI response format: {data}", file=sys.stderr)
+                    
+        except Exception as e:
+            print(f"DEBUG: OpenAI API Error: {str(e)}", file=sys.stderr)
             pass
 
+    # Fallback to template if OpenAI fails
     for key, data in DESTINATIONS_DB.items():
         if key in q_lower:
             return {
