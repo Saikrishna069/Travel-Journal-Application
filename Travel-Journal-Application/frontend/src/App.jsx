@@ -7,7 +7,7 @@ import DestinationPlanner from './components/DestinationPlanner';
 import { BookOpen, Sparkles, Wallet, Compass, LogOut, User, Lock, Mail } from 'lucide-react';
 
 export default function App() {
-  const [token, setToken] = useState(localStorage.getItem('token') || 'demo-traveler-session');
+  const [token, setToken] = useState(localStorage.getItem('token'));
   const [authMode, setAuthMode] = useState('login');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
@@ -15,11 +15,18 @@ export default function App() {
   const [activeTab, setActiveTab] = useState('journals');
 
   useEffect(() => {
-    if (!localStorage.getItem('token')) {
-      localStorage.setItem('token', 'demo-traveler-session');
-      setToken('demo-traveler-session');
-    }
-  }, []);
+    const checkSession = async () => {
+      if (token) {
+        try {
+          await api.get('/auth/me');
+        } catch (err) {
+          localStorage.removeItem('token');
+          setToken(null);
+        }
+      }
+    };
+    checkSession();
+  }, [token]);
 
   const handleAuth = async (e) => {
     e.preventDefault();
