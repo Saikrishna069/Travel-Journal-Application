@@ -43,7 +43,7 @@ async def chat_assistant(msg: ChatMessage):
     user_prompt = msg.message.strip()
     q_lower = user_prompt.lower()
     
-    if settings.OPENAI_API_KEY:
+    if settings.OPENAI_API_KEY and len(settings.OPENAI_API_KEY.strip()) > 0:
         try:
             async with httpx.AsyncClient(timeout=15.0) as client:
                 res = await client.post(
