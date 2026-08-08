@@ -2,20 +2,24 @@ import axios from 'axios';
 
 const api = axios.create({
   baseURL: '',
-  timeout: 20000
+  timeout: 20000,
+  headers: { 'Content-Type': 'application/json' }
 });
 
-api.interceptors.request.use(config => {
+api.interceptors.request.use((config) => {
   const token = localStorage.getItem('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
-}, error => Promise.reject(error));
+}, (error) => Promise.reject(error));
 
 api.interceptors.response.use(
-  response => response,
-  error => Promise.reject(error)
+  (response) => response,
+  (error) => {
+    console.error('API Error:', error.response?.status);
+    return Promise.reject(error);
+  }
 );
 
 export default api;
