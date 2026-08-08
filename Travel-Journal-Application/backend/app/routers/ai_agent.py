@@ -46,7 +46,7 @@ async def chat_assistant(msg: ChatMessage):
     
     if settings.OPENAI_API_KEY and len(settings.OPENAI_API_KEY.strip()) > 0:
         try:
-            print(f"DEBUG: Attempting OpenAI API call with key starting: {settings.OPENAI_API_KEY[:20]}", file=sys.stderr)
+            print(f"DEBUG: Attempting OpenAI API call", file=sys.stderr)
             
             async with httpx.AsyncClient(timeout=30.0) as client:
                 res = await client.post(
@@ -63,20 +63,20 @@ async def chat_assistant(msg: ChatMessage):
                     }
                 )
                 
-                print(f"DEBUG: OpenAI API Response Status: {res.status_code}", file=sys.stderr)
+                print(f"DEBUG: OpenAI Response Status: {res.status_code}", file=sys.stderr)
                 data = res.json()
                 
                 if "choices" in data and len(data["choices"]) > 0:
-                    reply = data["choices"][0]["message"]["content"]
-                    print(f"DEBUG: Got OpenAI response: {len(reply)} chars", file=sys.stderr)
-                    return {"reply": reply}
-                else:
-                    print(f"DEBUG: Unexpected OpenAI response format: {data}", file=sys.stderr)
+                    return {"reply": data["choices"][0]["message"]["content"]}
                     
         except Exception as e:
-            print(f"DEBUG: OpenAI API Error: {str(e)}", file=sys.stderr)
-            pass
+            print(f"DEBUG: OpenAI Error: {str(e)}", file=sys.stderr)
 
+    for key, data in DESTINATIONS_DB.items():
+        if key in q_lower:
+            return {"reply": f"🎯 Travel Analysis for {data['title']}...\n\n{data['day1']}\n{data['day2']}\n{data['day3']}"}
+
+    return {"reply": "Ask me about travel destinations!"}
     # Fallback to template if OpenAI fails
     for key, data in DESTINATIONS_DB.items():
         if key in q_lower:
