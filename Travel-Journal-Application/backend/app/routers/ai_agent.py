@@ -90,4 +90,17 @@ async def chat_assistant(msg: ChatMessage):
     return {
         "reply": f"🤖 **AI Travel Assistant Analysis for '{user_prompt}':**\n"
                  f"When planning your journey, prioritize historical landmarks early in the morning, use local public transport cards, and sample signature regional dishes!"
+    }    # Fallback to template if OpenAI fails
+    for key, data in DESTINATIONS_DB.items():
+        if key in q_lower:
+            return {
+                "reply": f"🎯 **Travel Analysis for {data['title']}:**\n\n"
+                         f"🗓️ **Itinerary:** Day 1: {data['day1']}\nDay 2: {data['day2']}\nDay 3: {data['day3']}\n\n"
+                         f"🏨 **Hotels:** {data['hotels']}\n\n"
+                         f"🍲 **Famous Food:** {data['food']}"
+            }
+
+    return {
+        "reply": f"🤖 **AI Travel Assistant Analysis for '{user_prompt}':**\n"
+                 f"When planning your journey, prioritize historical landmarks early in the morning, use local public transport cards, and sample signature regional dishes!"
     }
